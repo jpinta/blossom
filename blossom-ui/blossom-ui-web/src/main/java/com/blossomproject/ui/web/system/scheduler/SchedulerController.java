@@ -63,6 +63,14 @@ public class SchedulerController {
     scheduledJobService.execute(JobKey.jobKey(name, group));
   }
 
+
+  @PostMapping("/{group}/{name}/_changeState")
+  @ResponseBody
+  public void executeTask(Model model, @PathVariable String group, @PathVariable String name, @RequestParam("state") boolean state)
+    throws SchedulerException {
+    scheduledJobService.changeJobState(JobKey.jobKey(name, group), state);
+  }
+
   @PostMapping("/_changeState")
   @ResponseStatus(HttpStatus.OK)
   public void scheduler(Model model, @RequestParam("state") boolean state)

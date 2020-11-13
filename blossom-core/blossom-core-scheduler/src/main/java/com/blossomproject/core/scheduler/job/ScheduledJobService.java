@@ -16,4 +16,6 @@ public interface ScheduledJobService {
   JobInfo getOne(JobKey jobKey);
 
   void execute(JobKey jobKey);
+
+  void changeJobState(JobKey jobKey, boolean activate);
 }

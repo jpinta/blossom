@@ -19,6 +19,7 @@ public class JobInfo {
   private List<TriggerHistory> history;
   private List<? extends Trigger> triggers;
   private List<JobExecutionContext> jobExecutionContexts;
+  private Boolean activate;
 
   public JobInfo(JobKey key) {
     this.key = key;
@@ -85,5 +86,13 @@ public class JobInfo {
   }
   public boolean isExecuting(Trigger trigger){
     return jobExecutionContexts.stream().anyMatch(exec -> exec.getTrigger().equals(trigger));
+  }
+
+  public Boolean getActivate() {
+    return activate;
+  }
+
+  public void setActivate(Boolean activate) {
+    this.activate = activate;
   }
 }

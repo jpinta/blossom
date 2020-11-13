@@ -15,7 +15,7 @@
         </small>
       </td>
       <td class="project-status">
-        <#if scheduler.standBy>
+        <#if scheduler.standBy || !jobInfo.activate>
           <span class="label label-warning-light">
             <@spring.message "scheduler.job.state.standby"/>
           </span>
@@ -56,12 +56,30 @@
           <i class="fa fa-calendar-times-o text-danger"></i> <@spring.message "never"/>
         </#if>
       </td>
+      <td class="project-state">
+        <div class="switch">
+          <div class="onoffswitch">
+            <#assign activate = !jobInfo.activate>
+            <input type="checkbox" <#if jobInfo.activate>checked=""</#if>class="onoffswitch-checkbox" id="job-standby-${jobInfo.key.group}-${jobInfo.key.name}" onchange="changeState('${jobInfo.key.group}','${jobInfo.key.name}','${(activate?c)}');">
+            <label class="onoffswitch-label" for="job-standby-${jobInfo.key.group}-${jobInfo.key.name}">
+              <span class="onoffswitch-inner"></span>
+              <span class="onoffswitch-switch"></span>
+            </label>
+          </div>
+        </div>
+      </td>
     </tr>
     </#list>
     </tbody>
   </table>
 </div>
 <script>
+  var changeState = function(group, name, activate){
+    $.post(window.location.pathname+'/'+group+'/'+name+'/_changeState?state='+activate,function(){
+      updateTabPane($('.scheduler  li.active a[data-toggle="tab"]'));
+    });
+  }
+
   var clickedJobInfos = function (e) {
     $(document).trigger("scheduledTaskSelected", $(e).data("href"));
   }

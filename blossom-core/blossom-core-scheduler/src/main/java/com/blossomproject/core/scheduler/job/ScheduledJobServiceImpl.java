@@ -7,7 +7,10 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.blossomproject.core.scheduler.history.TriggerHistory;
 import com.blossomproject.core.scheduler.history.TriggerHistoryDao;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,12 +31,26 @@ public class ScheduledJobServiceImpl implements ScheduledJobService {
   private final static Logger LOGGER = LoggerFactory.getLogger(ScheduledJobServiceImpl.class);
   private final Scheduler scheduler;
   private final TriggerHistoryDao triggerHistoryDao;
+  private final Map<JobKey, Boolean> jobStates = new HashMap<>();
 
   public ScheduledJobServiceImpl(Scheduler scheduler, TriggerHistoryDao triggerHistoryDao) {
     Preconditions.checkNotNull(scheduler);
     Preconditions.checkNotNull(triggerHistoryDao);
     this.scheduler = scheduler;
     this.triggerHistoryDao = triggerHistoryDao;
+    try {
+      scheduler.getJobGroupNames().forEach(groupName -> {
+        try {
+          scheduler.getJobKeys(groupEquals(groupName)).forEach(jobKey -> {
+            jobStates.put(jobKey, true);
+          });
+        } catch (SchedulerException e) {
+          LOGGER.error("Cannot get jobkeys of groupname {}", groupName, e);
+        }
+      });
+    } catch (SchedulerException e) {
+      LOGGER.error("Cannot get groupNames", e);
+    }
   }
 
   @Override
@@ -48,6 +65,21 @@ public class ScheduledJobServiceImpl implements ScheduledJobService {
       }
     } catch (SchedulerException e) {
       LOGGER.error("Cannot change scheduler state", e);
+    }
+  }
+
+  @Override
+  public void changeJobState(JobKey jobKey, boolean activate) {
+    try {
+      if(activate) {
+        scheduler.resumeJob(jobKey);
+        jobStates.put(jobKey,Boolean.TRUE);
+      } else {
+        scheduler.pauseJob(jobKey);
+        jobStates.put(jobKey,Boolean.FALSE);
+      }
+    } catch (SchedulerException e) {
+      LOGGER.error("Cannot pause/resume job for jobKey " + jobKey, e);
     }
   }
 
@@ -112,6 +144,7 @@ public class ScheduledJobServiceImpl implements ScheduledJobService {
       jobInfo.setDetail(jobDetail);
       jobInfo.setTriggers(triggers);
       jobInfo.setJobExecutionContexts(jobExecutionContexts);
+      jobInfo.setActivate(jobStates.get(jobKey));
 
       List<TriggerHistory> triggerHistories = triggerHistoryDao.getJobHistory(jobKey);
       jobInfo.setLastExecutedTrigger(Iterables.getFirst(triggerHistories, null));
